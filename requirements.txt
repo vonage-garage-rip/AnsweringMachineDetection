@@ -10,7 +10,7 @@ joblib==0.13.1
 librosa==0.6.2
 llvmlite==0.27.0
 mkl-fft==1.0.6
-mkl-random==1.0.2
+mkl-random==1.0.1
 nexmo==2.3.0
 numba==0.42.0
 numpy==1.15.4
