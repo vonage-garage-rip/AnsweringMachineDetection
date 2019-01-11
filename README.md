@@ -4,12 +4,12 @@ To install:
 ` pip install -r requirements.txt`
 
 Create a .env file with the following
-
+```
 HOSTNAME={SERVER_URL}
 NEXMO_NUMBER={YOUR NEXMO NUMBER}
 NEXMO_APP_ID={NEXMO APP ID}
 CONF_NAME={NAME OF CONFERENCE} which can be anything
-
+```
 to Run:
 run:`python websocket-test.py`
 the Application will ask for a number to dial. You can enter in your own cell phone number
