@@ -134,13 +134,13 @@ class LexProcessor(object):
                 global beep_captured
                 beep_captured = True
                 print("beep")
-                for id in conversation_ids:
-                    print("sending speech to ", id)
-                    response = client.send_speech(id, text='We have detected your answering machine. Thats ok, we\'ll call you back later')
-                time.sleep(10)
-                for id in conversation_ids:
-                    print("sending speech to ", id)
-                    client.update_call(id, action='hangup')
+                # for id in conversation_ids:
+                #     print("sending speech to ", id)
+                #     response = client.send_speech(id, text='We have detected your answering machine. Thats ok, we\'ll call you back later')
+                # time.sleep(10)
+                # for id in conversation_ids:
+                #     print("sending speech to ", id)
+                #     client.update_call(id, action='hangup')
 
         else:
             print("model not loaded")
@@ -186,18 +186,20 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         else:
             # Here we should be extracting the meta data that was sent and attaching it to the connection object
             data = json.loads(message)
-            m_type, m_options = cgi.parse_header(data['content-type'])
-            self.rate = 16000
-            # region = data.get('aws_region', 'us-east-1')
-            clip_min = int(data.get('clip_min', 200))
-            clip_max = int(data.get('clip_max', 10000))
-            silence_time = int(data.get('silence_time', 300))
-            sensitivity = int(data.get('sensitivity', 3))
-            self.vad.set_mode(sensitivity)
-            self.silence = silence_time // MS_PER_FRAME
-            self.processor = LexProcessor(self.path, self.rate, clip_min, None, None, None).process
-            self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
-            self.write_message('ok')
+            print(data)
+            if data.get('content-type'):
+                m_type, m_options = cgi.parse_header(data['content-type'])
+                self.rate = 16000
+                # region = data.get('aws_region', 'us-east-1')
+                clip_min = int(data.get('clip_min', 200))
+                clip_max = int(data.get('clip_max', 10000))
+                silence_time = int(data.get('silence_time', 300))
+                sensitivity = int(data.get('sensitivity', 3))
+                self.vad.set_mode(sensitivity)
+                self.silence = silence_time // MS_PER_FRAME
+                self.processor = LexProcessor(self.path, self.rate, clip_min, None, None, None).process
+                self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
+                self.write_message('ok')
     def on_close(self):
         # Remove the connection from the list of connections
         del conns[self.id]
@@ -306,7 +308,7 @@ def main():
         application = tornado.web.Application([
 			url(r"/ping", PingHandler),
             (r"/event", EventHandler),
-            (r"/ncco", EnterPhoneNumberHandler),
+            (r"/ncco", CallHandler),
             (r"/ncco-connect", CallHandler),
             (r"/ivr", AcceptNumberHandler),
             url(r"/(.*)", WSHandler),
