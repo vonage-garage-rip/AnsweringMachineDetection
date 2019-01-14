@@ -52,7 +52,6 @@ CONF_NAME = os.getenv("CONF_NAME")
 conns = {}
 clients = []
 conversation_ids = set()
-beep_captured = False
 loaded_model = pickle.load(open("models/rf-mfccs_40-10s-2.pkl", "rb"))
 print(loaded_model)
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
@@ -94,7 +93,7 @@ class LexProcessor(object):
         self._path = path
         self.clip_min_frames = clip_min // MS_PER_FRAME
     def process(self, count, payload, id):
-        if beep_captured == False and count > self.clip_min_frames:  # If the buffer is less than CLIP_MIN_MS, ignore it
+        if count > self.clip_min_frames:  # If the buffer is less than CLIP_MIN_MS, ignore it
             fn = "{}rec-{}-{}.wav".format('', id, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
             output = wave.open(fn, 'wb')
             output.setparams((1, 2, self.rate, 0, 'NONE', 'not compressed'))
@@ -108,8 +107,7 @@ class LexProcessor(object):
     def process_file(self, wav_file):
         if loaded_model != None:
             print("load file {}".format(wav_file))
-            for client in clients:
-                print("client", client)
+
             # self.func("processing audio file")
             X, sample_rate = librosa.load(wav_file, res_type='kaiser_fast')
             mfccs = np.mean(librosa.feature.mfcc(y=X, sr=sample_rate, n_mfcc=40).T,axis=0)
@@ -118,9 +116,7 @@ class LexProcessor(object):
             print("prediction",prediction)
 
             if prediction[0] == 0:
-                global beep_captured
                 beep_captured = True
-                client.write_message({"beep_detected":True})
                 print("beep detected")
                 # for id in conversation_ids:
                 #     print("sending speech to ", id)
@@ -130,7 +126,10 @@ class LexProcessor(object):
                 #     print("sending speech to ", id)
                 #     client.update_call(id, action='hangup')
             else:
-                client.write_message({"beep_detected":False})
+                beep_captured = False
+
+                for client in clients:
+                    client.write_message({"beep_detected":beep_captured})
 
         else:
             print("model not loaded")
