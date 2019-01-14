@@ -52,8 +52,8 @@ CONF_NAME = os.getenv("CONF_NAME")
 conns = {}
 conversation_ids = set()
 beep_captured = False
-# loaded_model = pickle.load(open("models/rf-mfccs_40-10s-2.pkl", "rb"))
-# print(loaded_model)
+loaded_model = pickle.load(open("models/rf-mfccs_40-10s-2.pkl", "rb"))
+print(loaded_model)
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
 print(client)
 class BufferedPipe(object):
