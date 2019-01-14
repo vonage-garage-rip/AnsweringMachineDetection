@@ -50,6 +50,7 @@ CONF_NAME = os.getenv("CONF_NAME")
 
 # Global variables
 conns = {}
+clients = []
 conversation_ids = set()
 beep_captured = False
 loaded_model = pickle.load(open("models/rf-mfccs_40-10s-2.pkl", "rb"))
@@ -107,22 +108,29 @@ class LexProcessor(object):
     def process_file(self, wav_file):
         if loaded_model != None:
             print("load file {}".format(wav_file))
+            for client in clients:
+                print("client", client)
+            # self.func("processing audio file")
             X, sample_rate = librosa.load(wav_file, res_type='kaiser_fast')
             mfccs = np.mean(librosa.feature.mfcc(y=X, sr=sample_rate, n_mfcc=40).T,axis=0)
             X = [mfccs]
             prediction = loaded_model.predict(X)
             print("prediction",prediction)
+
             if prediction[0] == 0:
                 global beep_captured
                 beep_captured = True
-                print("beep")
-                for id in conversation_ids:
-                    print("sending speech to ", id)
-                    response = client.send_speech(id, text='We have detected your answering machine. Thats ok, we\'ll call you back later')
-                time.sleep(10)
-                for id in conversation_ids:
-                    print("sending speech to ", id)
-                    client.update_call(id, action='hangup')
+                client.write_message({"beep_detected":True})
+                print("beep detected")
+                # for id in conversation_ids:
+                #     print("sending speech to ", id)
+                #     response = client.send_speech(id, text='We have detected your answering machine. Thats ok, we\'ll call you back later')
+                # time.sleep(10)
+                # for id in conversation_ids:
+                #     print("sending speech to ", id)
+                #     client.update_call(id, action='hangup')
+            else:
+                client.write_message({"beep_detected":False})
 
         else:
             print("model not loaded")
@@ -145,13 +153,13 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         conns[self.id] = self
     def open(self, path):
         info("client connected")
+        clients.append(self)
         debug(self.request.uri)
         self.path = self.request.uri
         self.tick = 0
     def on_message(self, message):
         # Check if message is Binary or Text
         if type(message) != str:
-            # print("message",message)
             # print(self.rate)
             if self.vad.is_speech(message, self.rate):
                 debug ("SPEECH from {}".format(self.id))
@@ -165,7 +173,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         else:
             # Here we should be extracting the meta data that was sent and attaching it to the connection object
             data = json.loads(message)
-            print(data)
+            print("on_message",data)
             if data.get('content-type'):
                 m_type, m_options = cgi.parse_header(data['content-type'])
                 self.rate = 16000
