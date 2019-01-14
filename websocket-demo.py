@@ -314,7 +314,8 @@ def main():
             url(r"/(.*)", WSHandler),
         ])
         http_server = tornado.httpserver.HTTPServer(application)
-        http_server.listen(8000)
+        port = int(os.getenv('PORT', 8000))
+        http_server.listen(port)
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
         pass  # Suppress the stack-trace on quit
