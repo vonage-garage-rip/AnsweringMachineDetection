@@ -134,13 +134,13 @@ class LexProcessor(object):
                 global beep_captured
                 beep_captured = True
                 print("beep")
-                # for id in conversation_ids:
-                #     print("sending speech to ", id)
-                #     response = client.send_speech(id, text='We have detected your answering machine. Thats ok, we\'ll call you back later')
-                # time.sleep(10)
-                # for id in conversation_ids:
-                #     print("sending speech to ", id)
-                #     client.update_call(id, action='hangup')
+                for id in conversation_ids:
+                    print("sending speech to ", id)
+                    response = client.send_speech(id, text='We have detected your answering machine. Thats ok, we\'ll call you back later')
+                time.sleep(10)
+                for id in conversation_ids:
+                    print("sending speech to ", id)
+                    client.update_call(id, action='hangup')
 
         else:
             print("model not loaded")
