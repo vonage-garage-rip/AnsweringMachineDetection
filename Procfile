@@ -1,1 +1,1 @@
-web: python websocket-demo.py --port=$PORT
+web: python websocket-demo.py
