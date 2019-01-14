@@ -6,3 +6,4 @@ joblib==0.13.1
 mkl-fft==1.0.6
 mkl-random==1.0.1
 numba==0.42.0
+python-dotenv
