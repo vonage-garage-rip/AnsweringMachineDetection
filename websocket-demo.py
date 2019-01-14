@@ -87,10 +87,7 @@ class BufferedPipe(object):
 
 
 class LexProcessor(object):
-    def __init__(self, path, rate, clip_min, aws_region, aws_id, aws_secret):
-        self._aws_region = aws_region
-        self._aws_id = aws_id
-        self._aws_secret = aws_secret
+    def __init__(self, path, rate, clip_min):
         self.rate = rate
         self.bytes_per_frame = rate/25
         self._path = path
@@ -107,21 +104,6 @@ class LexProcessor(object):
             info('Processing {} frames for {}'.format(str(count), id))
         else:
             info('Discarding {} frames'.format(str(count)))
-    def playback(self, response, id):
-        if self.rate == 8000:
-            content, _ignore = audioop.ratecv(response, 2, 1, 16000, 8000, None) # Downsample 16Khz to 8Khz
-        else:
-            content = response
-        frames = len(content) // self.bytes_per_frame
-        info("Playing {} frames to {}".format(frames, id))
-        conn = conns[id]
-        pos = 0
-        for x in range(0, frames + 1):
-            newpos = pos + self.bytes_per_frame
-            #debug("writing bytes {} to {} to socket for {}".format(pos, newpos, id))
-            data = content[pos:newpos]
-            conn.write_message(data, binary=True)
-            pos = newpos
     def process_file(self, wav_file):
         if loaded_model != None:
             print("load file {}".format(wav_file))
@@ -146,9 +128,6 @@ class LexProcessor(object):
             print("model not loaded")
     def removeFile(self, wav_file):
          os.remove(wav_file)
-    def playAudio(self, uuid):
-        response = client.send_speech(uuid, text='Hello')
-
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
@@ -197,12 +176,13 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 sensitivity = int(data.get('sensitivity', 3))
                 self.vad.set_mode(sensitivity)
                 self.silence = silence_time // MS_PER_FRAME
-                self.processor = LexProcessor(self.path, self.rate, clip_min, None, None, None).process
+                self.processor = LexProcessor(self.path, self.rate, clip_min).process
                 self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
                 self.write_message('ok')
     def on_close(self):
         # Remove the connection from the list of connections
         del conns[self.id]
+        clients.remove(self)
         info("client disconnected")
 
 
