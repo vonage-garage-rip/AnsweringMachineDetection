@@ -308,7 +308,7 @@ def main():
         application = tornado.web.Application([
 			url(r"/ping", PingHandler),
             (r"/event", EventHandler),
-            (r"/ncco", CallHandler),
+            (r"/ncco", EnterPhoneNumberHandler),
             (r"/ncco-connect", CallHandler),
             (r"/ivr", AcceptNumberHandler),
             url(r"/(.*)", WSHandler),
