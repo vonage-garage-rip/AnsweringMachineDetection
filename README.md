@@ -27,22 +27,52 @@ The call will then hangup
 To run as a standalone application, you can connect to the websocket, and the use a seperate websocket client to listen to events:
 For your purchased Nexmo number, set your Answer NCCO to:
 ```
-[
+ncco = [
             {
                "action": "connect",
                "from": {NEXMO_NUMBER},
                "endpoint": [
                    {
                       "type": "websocket",
-                      "uri" : "ws://careangel-amd-detector.herokuapp.com/socket",
+                      "uri" : "ws://"+HOSTNAME+"/socket",
                       "content-type": "audio/l16;rate=16000",
                       "headers": {
+                        "conversation_uuid":conversation_uuid 
                       }
                    }
                ]
              }
         ]
 ```
+In order to get the conversation_uuid, can use use the conversation_uuid from the query parameter.
+```python
+class ConnectHandler(tornado.web.RequestHandler):
+    def get(self):
+        conversation_uuid = self.get_arguments("conversation_uuid")[0]
+        ncco = [
+            {
+               "action": "connect",
+               "from": NEXMO_NUMBER,
+               "endpoint": [
+                   {
+                      "type": "websocket",
+                      "uri" : "ws://"+HOSTNAME+"/socket",
+                      "content-type": "audio/l16;rate=16000",
+                      "headers": {
+                        "conversation_uuid":conversation_uuid
+                      }
+                   }
+               ]
+             }
+        ]
+        print(ncco)
+        self.write(json.dumps(ncco))
+        self.set_header("Content-Type", 'application/json; charset="utf-8"')
+        self.finish()
+ ```
+See [server.py](../blob/master/server.py) for full example
+
+
 This will only send the audio data to the websocket.
 In order to get events, you will need to create a client to connect to the websocket
 
@@ -58,6 +88,8 @@ ws.on('message', function incoming(data) {
 ```
 
 Once the call is connected to the websocket, you will send the following logs to the nodeJS application
-{"beep_detected": false}
+{"conversation_uuid": "CON-d6d309dc-a56e-4c70-87d1-555277faa0d1", "beep_detected": false}
+
 Once a beep is detected, you will see
-{"beep_detected": true}
+{"conversation_uuid": "CON-d6d309dc-a56e-4c70-87d1-555277faa0d1", "beep_detected": true}
+
