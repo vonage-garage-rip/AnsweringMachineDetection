@@ -51,7 +51,6 @@ CONF_NAME = os.getenv("CONF_NAME")
 # Global variables
 conns = {}
 clients = []
-conversation_ids = set()
 loaded_model = pickle.load(open("models/rf-mfccs_40-10s-2.pkl", "rb"))
 print(loaded_model)
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
@@ -87,11 +86,12 @@ class BufferedPipe(object):
 
 
 class LexProcessor(object):
-    def __init__(self, path, rate, clip_min):
+    def __init__(self, path, rate, clip_min, conversation_uuid):
         self.rate = rate
         self.bytes_per_frame = rate/25
         self._path = path
         self.clip_min_frames = clip_min // MS_PER_FRAME
+        self.conversation_uuid = conversation_uuid
     def process(self, count, payload, id):
         if count > self.clip_min_frames:  # If the buffer is less than CLIP_MIN_MS, ignore it
             fn = "{}rec-{}-{}.wav".format('', id, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
@@ -118,18 +118,12 @@ class LexProcessor(object):
             if prediction[0] == 0:
                 beep_captured = True
                 print("beep detected")
-                # for id in conversation_ids:
-                #     print("sending speech to ", id)
-                #     response = client.send_speech(id, text='We have detected your answering machine. Thats ok, we\'ll call you back later')
-                # time.sleep(10)
-                # for id in conversation_ids:
-                #     print("sending speech to ", id)
-                #     client.update_call(id, action='hangup')
             else:
                 beep_captured = False
 
                 for client in clients:
-                    client.write_message({"beep_detected":beep_captured})
+                    print(client)
+                    client.write_message({"conversation_uuid":self.conversation_uuid, "beep_detected":beep_captured})
 
         else:
             print("model not loaded")
@@ -181,9 +175,10 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 clip_max = int(data.get('clip_max', 10000))
                 silence_time = int(data.get('silence_time', 300))
                 sensitivity = int(data.get('sensitivity', 3))
+                conversation_uuid = data.get('conversation_uuid')
                 self.vad.set_mode(sensitivity)
                 self.silence = silence_time // MS_PER_FRAME
-                self.processor = LexProcessor(self.path, self.rate, clip_min).process
+                self.processor = LexProcessor(self.path, self.rate, clip_min, conversation_uuid).process
                 self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
                 self.write_message('ok')
     def on_close(self):
@@ -208,9 +203,6 @@ class EventHandler(tornado.web.RequestHandler):
 
         if data["status"] == "answered":
             print(data)
-            global conversation_ids
-            conversation_ids.add(data["uuid"])
-            # print("conversation_ids",conversation_ids)
         self.content_type = 'text/plain'
         self.write('ok')
         self.finish()
