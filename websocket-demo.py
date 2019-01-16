@@ -102,6 +102,7 @@ class LexProcessor(object):
             debug('File written {}'.format(fn))
             self.process_file(fn)
             info('Processing {} frames for {}'.format(str(count), id))
+            self.removeFile(fn)
         else:
             info('Discarding {} frames'.format(str(count)))
     def process_file(self, wav_file):
