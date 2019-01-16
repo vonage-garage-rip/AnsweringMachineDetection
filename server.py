@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-HOSTNAME =  os.getenv("HOSTNAME")#Change to the hostname of your server
+HOSTNAME =  'careangel-amd-detector.herokuapp.com'#os.getenv("HOSTNAME")#Change to the hostname of your server
 NEXMO_NUMBER = os.getenv("NEXMO_NUMBER")
 
 
