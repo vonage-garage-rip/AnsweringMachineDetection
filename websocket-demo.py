@@ -32,6 +32,7 @@ import numpy as np
 from scipy.io import wavfile
 import librosa
 import pickle
+from google.cloud import storage
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -84,7 +85,6 @@ class BufferedPipe(object):
         self.count = 0
         self.payload = b''
 
-
 class LexProcessor(object):
     def __init__(self, path, rate, clip_min, conversation_uuid):
         self.rate = rate
@@ -102,6 +102,17 @@ class LexProcessor(object):
             debug('File written {}'.format(fn))
             self.process_file(fn)
             info('Processing {} frames for {}'.format(str(count), id))
+
+            storage_client = storage.Client(os.getenv("PROJECT_ID"))
+            bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
+
+            blob = bucket.blob(fn)
+
+            blob.upload_from_filename(fn)
+
+            print('File uploaded.')
+
+
             self.removeFile(fn)
         else:
             info('Discarding {} frames'.format(str(count)))
@@ -109,7 +120,6 @@ class LexProcessor(object):
         if loaded_model != None:
             print("load file {}".format(wav_file))
 
-            # self.func("processing audio file")
             X, sample_rate = librosa.load(wav_file, res_type='kaiser_fast')
             mfccs = np.mean(librosa.feature.mfcc(y=X, sr=sample_rate, n_mfcc=40).T,axis=0)
             X = [mfccs]
