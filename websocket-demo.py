@@ -33,6 +33,7 @@ from scipy.io import wavfile
 import librosa
 import pickle
 from google.cloud import storage
+from sklearn.externals import joblib
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -52,7 +53,8 @@ CONF_NAME = os.getenv("CONF_NAME")
 # Global variables
 conns = {}
 clients = []
-loaded_model = pickle.load(open("models/rf-mfccs_40-10s-2.pkl", "rb"))
+loaded_model = joblib.load(open("models/svm-mfccs_40-10s-01-24-19.pickle", "rb"))
+
 print(loaded_model)
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
 print(client)
@@ -102,17 +104,7 @@ class LexProcessor(object):
             debug('File written {}'.format(fn))
             self.process_file(fn)
             info('Processing {} frames for {}'.format(str(count), id))
-
-            storage_client = storage.Client(os.getenv("PROJECT_ID"))
-            bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
-
-            blob = bucket.blob(fn)
-
-            blob.upload_from_filename(fn)
-
-            print('File uploaded.')
-
-
+            self.uploadFile(fn)
             self.removeFile(fn)
         else:
             info('Discarding {} frames'.format(str(count)))
@@ -138,6 +130,14 @@ class LexProcessor(object):
 
         else:
             print("model not loaded")
+
+    def uploadFile(self, wavfile):
+        storage_client = storage.Client(os.getenv("PROJECT_ID"))
+        bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
+        blob = bucket.blob(wavfile)
+        blob.upload_from_filename(wavfile)
+        print('File uploaded.')
+
     def removeFile(self, wav_file):
          os.remove(wav_file)
 
