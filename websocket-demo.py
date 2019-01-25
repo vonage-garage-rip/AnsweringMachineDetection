@@ -103,14 +103,14 @@ class LexProcessor(object):
             self.process_file(fn)
             info('Processing {} frames for {}'.format(str(count), id))
 
-            storage_client = storage.Client(os.getenv("PROJECT_ID"))
-            bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
-
-            blob = bucket.blob(fn)
-
-            blob.upload_from_filename(fn)
-
-            print('File uploaded.')
+            # storage_client = storage.Client(os.getenv("PROJECT_ID"))
+            # bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
+            #
+            # blob = bucket.blob(fn)
+            #
+            # blob.upload_from_filename(fn)
+            #
+            # print('File uploaded.')
 
 
             self.removeFile(fn)
