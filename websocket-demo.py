@@ -124,9 +124,9 @@ class LexProcessor(object):
             else:
                 beep_captured = False
 
-                for client in clients:
-                    print(client)
-                    client.write_message({"conversation_uuid":self.conversation_uuid, "beep_detected":beep_captured})
+            for client in clients:
+                print(client)
+                client.write_message({"conversation_uuid":self.conversation_uuid, "beep_detected":beep_captured})
 
         else:
             print("model not loaded")
