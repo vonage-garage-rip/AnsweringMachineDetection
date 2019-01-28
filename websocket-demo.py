@@ -49,10 +49,13 @@ NEXMO_NUMBER = os.getenv("NEXMO_NUMBER")
 NEXMO_APP_ID = os.getenv("NEXMO_APP_ID")
 CONF_NAME = os.getenv("CONF_NAME")
 
+storage_client = storage.Client(os.getenv("PROJECT_ID"))
+bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
+
 # Global variables
 conns = {}
 clients = []
-loaded_model = pickle.load(open("models/rf-mfccs_40-10s-2.pkl", "rb"))
+loaded_model = pickle.load(open("models/rf-20190128T1938.pkl", "rb"))
 print(loaded_model)
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
 print(client)
@@ -103,15 +106,12 @@ class LexProcessor(object):
             self.process_file(fn)
             info('Processing {} frames for {}'.format(str(count), id))
 
-            # storage_client = storage.Client(os.getenv("PROJECT_ID"))
-            # bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
-            #
-            # blob = bucket.blob(fn)
-            #
-            # blob.upload_from_filename(fn)
-            #
-            # print('File uploaded.')
-
+            try:
+                blob = bucket.blob(fn)
+                blob.upload_from_filename(fn)
+                print('File uploaded.')
+            except Exception as e:
+                print("Error encountered while uploading file: ", e)
 
             self.removeFile(fn)
         else:
@@ -211,9 +211,7 @@ class EventHandler(tornado.web.RequestHandler):
     def post(self):
         # print(self.request.body)
         data = json.loads(self.request.body)
-
-        if data["status"] == "answered":
-            print(data)
+        print(data)
         self.content_type = 'text/plain'
         self.write('ok')
         self.finish()
