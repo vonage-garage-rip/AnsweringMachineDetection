@@ -35,6 +35,8 @@ import pickle
 from google.cloud import storage
 
 from dotenv import load_dotenv
+from sklearn.naive_bayes import GaussianNB
+
 load_dotenv()
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
@@ -55,7 +57,7 @@ bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
 # Global variables
 conns = {}
 clients = []
-loaded_model = pickle.load(open("models/rf-20190128T1938.pkl", "rb"))
+loaded_model = pickle.load(open("models/GaussianNB-20190129T2116.pkl", "rb"))
 print(loaded_model)
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
 print(client)
