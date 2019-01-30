@@ -57,7 +57,7 @@ bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
 # Global variables
 conns = {}
 clients = []
-loaded_model = pickle.load(open("models/GaussianNB-20190129T2116.pkl", "rb"))
+loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
 print(loaded_model)
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
 print(client)
