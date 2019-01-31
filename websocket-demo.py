@@ -57,6 +57,8 @@ bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
 # Global variables
 conns = {}
 clients = []
+conversation_uuids = dict()
+
 loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
 print(loaded_model)
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
@@ -195,6 +197,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
                 self.write_message('ok')
     def on_close(self):
+        print("close")
         # Remove the connection from the list of connections
         del conns[self.id]
         clients.remove(self)
@@ -211,9 +214,34 @@ class PingHandler(tornado.web.RequestHandler):
 class EventHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def post(self):
-        # print(self.request.body)
+        # print("event:", self.request.body)
+
         data = json.loads(self.request.body)
-        print(data)
+        try:
+            ""
+            if data["status"] == "answered" and "ws://" in data["to"]:
+                print("found WS")
+                uuid = data["uuid"]
+                conversation_uuid = data["conversation_uuid"]
+                conversation_uuids[conversation_uuid] = uuid
+        except:
+            pass
+
+
+        try:
+            if data["status"] == "completed":
+                ws_conversation_id = conversation_uuids[data["conversation_uuid"]]
+
+                print(conversation_uuids[data["conversation_uuid"]])
+                response = client.update_call(ws_conversation_id, action='hangup')
+                conversation_uuids[data["conversation_uuid"]] = ''
+                print(response)
+
+        except Exception as e:
+            print(e)
+            pass
+
+
         self.content_type = 'text/plain'
         self.write('ok')
         self.finish()
@@ -232,11 +260,8 @@ class EnterPhoneNumberHandler(tornado.web.RequestHandler):
                 "timeOut":10,
                 "maxDigits":12,
                 "submitOnHash":True
-              },
-              {
-              "action": "conversation",
-              "name": CONF_NAME
               }
+
             ]
         self.write(json.dumps(ncco))
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
@@ -247,18 +272,40 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def post(self):
         data = json.loads(self.request.body)
-        print(data["dtmf"])
-        response = client.create_call({
-          'to': [{'type': 'phone', 'number': data["dtmf"]}],
-          'from': {'type': 'phone', 'number': NEXMO_NUMBER},
-          'answer_url': ["https://"+HOSTNAME+"/ncco-connect"]
-        })
-        # conversation_uuid = response["uuid"]
-        # print(conversation_uuid)
-        # response = client.send_speech(conversation_uuid, text='Hello')
 
-        self.content_type = 'text/plain'
-        self.write('ok')
+        ncco = [
+              {
+                "action": "talk",
+                "text": "Thanks. Connecting you now"
+              },
+             {
+             "action": "connect",
+              "eventUrl": ["https://"+HOSTNAME+"/event"],
+               "from": NEXMO_NUMBER,
+               "endpoint": [
+                 {
+                   "type": "phone",
+                   "number": data["dtmf"]
+                 }
+               ]
+             },
+              {
+                 "action": "connect",
+                 "eventUrl": ["https://"+HOSTNAME+"/event"],
+                 "from": NEXMO_NUMBER,
+                 "endpoint": [
+                     {
+                        "type": "websocket",
+                        "uri" : "ws://"+HOSTNAME+"/socket",
+                        "content-type": "audio/l16;rate=16000",
+                        "headers": {
+                        }
+                     }
+                 ]
+               }
+            ]
+        self.write(json.dumps(ncco))
+        self.set_header("Content-Type", 'application/json; charset="utf-8"')
         self.finish()
 
 class CallHandler(tornado.web.RequestHandler):
@@ -268,6 +315,7 @@ class CallHandler(tornado.web.RequestHandler):
 
             {
                "action": "connect",
+               "eventUrl": ["https://"+HOSTNAME+"/event"],
                "from": NEXMO_NUMBER,
                "endpoint": [
                    {
