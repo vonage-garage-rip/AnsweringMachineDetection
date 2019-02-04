@@ -93,12 +93,12 @@ class BufferedPipe(object):
         self.payload = b''
 
 class LexProcessor(object):
-    def __init__(self, path, rate, clip_min, conversation_uuid):
+    def __init__(self, path, rate, clip_min, uuid):
         self.rate = rate
         self.bytes_per_frame = rate/25
         self._path = path
         self.clip_min_frames = clip_min // MS_PER_FRAME
-        self.conversation_uuid = conversation_uuid
+        self.uuid = uuid
     def process(self, count, payload, id):
         if count > self.clip_min_frames:  # If the buffer is less than CLIP_MIN_MS, ignore it
             fn = "{}rec-{}-{}.wav".format('', id, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
@@ -130,7 +130,7 @@ class LexProcessor(object):
 
             for client in clients:
                 print(client)
-                client.write_message({"conversation_uuid":self.conversation_uuid, "beep_detected":beep_captured})
+                client.write_message({"uuid":self.uuid, "beep_detected":beep_captured})
 
         else:
             print("model not loaded")
@@ -182,10 +182,10 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 clip_max = int(data.get('clip_max', 10000))
                 silence_time = int(data.get('silence_time', 300))
                 sensitivity = int(data.get('sensitivity', 3))
-                conversation_uuid = data.get('conversation_uuid')
+                uuid = data.get('uuid')
                 self.vad.set_mode(sensitivity)
                 self.silence = silence_time // MS_PER_FRAME
-                self.processor = LexProcessor(self.path, self.rate, clip_min, conversation_uuid).process
+                self.processor = LexProcessor(self.path, self.rate, clip_min, uuid).process
                 self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
                 self.write_message('ok')
     def on_close(self):
@@ -264,7 +264,6 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def post(self):
         data = json.loads(self.request.body)
-
         ncco = [
               {
                 "action": "talk",
@@ -295,6 +294,7 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
                         "uri" : "ws://"+HOSTNAME+"/socket",
                         "content-type": "audio/l16;rate=16000",
                         "headers": {
+                            "uuid":data["uuid"]
                         }
                      }
                  ]
