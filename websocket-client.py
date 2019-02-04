@@ -18,7 +18,8 @@ print(client)
 
 def on_message(ws, message):
     data = json.loads(message)
-    if data["beep_detected"] == False:
+    print(data)
+    if data["beep_detected"] == True:
         response = client.send_speech(data["uuid"], text='Answering Machine Detected')
 
 def on_error(ws, error):
@@ -33,7 +34,7 @@ def on_open(ws):
 
 if __name__ == "__main__":
     websocket.enableTrace(True)
-    ws = websocket.WebSocketApp("ws://"+HOSTNAME+"/socket",
+    ws = websocket.WebSocketApp("ws://careangel-amd-detector.herokuapp.com/socket",
                                 on_message = on_message,
                                 on_error = on_error,
                                 on_close = on_close)
