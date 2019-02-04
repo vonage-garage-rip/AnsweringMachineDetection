@@ -212,10 +212,10 @@ class EventHandler(tornado.web.RequestHandler):
         try:
             ""
             if data["status"] == "answered" and "ws://" in data["to"]:
-                print("found WS")
                 uuid = data["uuid"]
                 conversation_uuid = data["conversation_uuid"]
                 conversation_uuids[conversation_uuid] = uuid
+                print(conversation_uuids)
         except:
             pass
 
@@ -264,6 +264,7 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def post(self):
         data = json.loads(self.request.body)
+        print(data)
         ncco = [
               {
                 "action": "talk",
@@ -304,34 +305,6 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
         self.finish()
 
-class CallHandler(tornado.web.RequestHandler):
-    @tornado.web.asynchronous
-    def get(self):
-        ncco = [
-
-            {
-               "action": "connect",
-               "eventUrl": ["https://"+HOSTNAME+"/event"],
-               "from": NEXMO_NUMBER,
-               "endpoint": [
-                   {
-                      "type": "websocket",
-                      "uri" : "ws://"+HOSTNAME+"/socket",
-                      "content-type": "audio/l16;rate=16000",
-                      "headers": {
-                      }
-                   }
-               ]
-             },
-             {
-             "action": "conversation",
-             "name": CONF_NAME
-             }
-        ]
-        self.write(json.dumps(ncco))
-        self.set_header("Content-Type", 'application/json; charset="utf-8"')
-        self.finish()
-
 class RecordHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def post(self):
@@ -362,7 +335,6 @@ def main():
 			url(r"/ping", PingHandler),
             (r"/event", EventHandler),
             (r"/ncco", EnterPhoneNumberHandler),
-            (r"/ncco-connect", CallHandler),
             (r"/recording", RecordHandler),
             (r"/ivr", AcceptNumberHandler),
             url(r"/(.*)", WSHandler),
@@ -376,5 +348,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
