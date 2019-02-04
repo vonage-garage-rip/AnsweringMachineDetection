@@ -11,7 +11,7 @@ GCP_PROJECT_AUTH_URI=os.getenv("GCP_PROJECT_AUTH_URI")
 GCP_PROJECT_TOKEN_URI=os.getenv("GCP_PROJECT_TOKEN_URI")
 GCP_PROJECT_AUTH_PROVIDER_CERT_URL=os.getenv("GCP_PROJECT_AUTH_PROVIDER_CERT_URL")
 GCP_PROJECT_CERT_URL=os.getenv("GCP_PROJECT_CERT_URL")
-
+GCP_JSON_FILE_NAME=os.getenv("GCP_JSON_FILE_NAME")
 goole_auth = {
   "type": "service_account",
   "project_id": GCP_PROJECT_ID,
@@ -26,5 +26,5 @@ goole_auth = {
 }
 
 import json
-with open('amd-recordings-firebase-adminsdk-eweq5-7b854cec310.json', 'w') as outfile:
+with open(GCP_JSON_FILE_NAME, 'w') as outfile:
     json.dump(goole_auth, outfile)
