@@ -109,14 +109,6 @@ class LexProcessor(object):
             debug('File written {}'.format(fn))
             self.process_file(fn)
             info('Processing {} frames for {}'.format(str(count), id))
-
-            try:
-                blob = bucket.blob(fn)
-                blob.upload_from_filename(fn)
-                print('File uploaded.')
-            except Exception as e:
-                print("Error encountered while uploading file: ", e)
-
             self.removeFile(fn)
         else:
             info('Discarding {} frames'.format(str(count)))
@@ -278,6 +270,10 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
                 "action": "talk",
                 "text": "Thanks. Connecting you now"
               },
+            {
+                "action": "record",
+                "eventUrl": ["https://"+HOSTNAME+"/recording"],
+              },
              {
              "action": "connect",
               "eventUrl": ["https://"+HOSTNAME+"/event"],
@@ -336,6 +332,25 @@ class CallHandler(tornado.web.RequestHandler):
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
         self.finish()
 
+class RecordHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
+    def post(self):
+        data = json.loads(self.request.body)
+
+        response = client.get_recording(data["recording_url"])
+        fn = "call-{}.wav".format(data["conversation_uuid"])
+
+        try:
+            blob = bucket.blob(fn)
+            blob.upload_from_string(response, content_type="audio/wav")
+            print('File uploaded.')
+        except Exception as e:
+            print("Error encountered while uploading file: ", e)
+
+
+        self.write('ok')
+        self.set_header("Content-Type", 'text/plain')
+        self.finish()
 
 def main():
     try:
@@ -348,6 +363,7 @@ def main():
             (r"/event", EventHandler),
             (r"/ncco", EnterPhoneNumberHandler),
             (r"/ncco-connect", CallHandler),
+            (r"/recording", RecordHandler),
             (r"/ivr", AcceptNumberHandler),
             url(r"/(.*)", WSHandler),
         ])
