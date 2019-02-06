@@ -130,7 +130,6 @@ class LexProcessor(object):
                 beep_captured = False
 
             for client in clients:
-                print(client)
                 client.write_message({"uuids":uuids, "beep_detected":beep_captured})
 
         else:
@@ -211,7 +210,6 @@ class EventHandler(tornado.web.RequestHandler):
 
         data = json.loads(self.request.body)
         try:
-            ""
             if data["status"] == "answered":
                 uuid = data["uuid"]
                 uuids.append(uuid)
@@ -227,7 +225,6 @@ class EventHandler(tornado.web.RequestHandler):
                 uuids.clear()
 
                 ws_conversation_id = conversation_uuids[data["conversation_uuid"]]
-                print(conversation_uuids[data["conversation_uuid"]])
                 response = client.update_call(ws_conversation_id, action='hangup')
                 conversation_uuids[data["conversation_uuid"]] = ''
                 print(response)
