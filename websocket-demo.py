@@ -58,6 +58,7 @@ bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
 conns = {}
 clients = []
 conversation_uuids = dict()
+uuids = []
 
 loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
 print(loaded_model)
@@ -130,7 +131,7 @@ class LexProcessor(object):
 
             for client in clients:
                 print(client)
-                client.write_message({"uuid":self.uuid, "beep_detected":beep_captured})
+                client.write_message({"uuids":uuids, "beep_detected":beep_captured})
 
         else:
             print("model not loaded")
@@ -211,8 +212,9 @@ class EventHandler(tornado.web.RequestHandler):
         data = json.loads(self.request.body)
         try:
             ""
-            if data["status"] == "answered" and "ws://" in data["to"]:
+            if data["status"] == "answered":
                 uuid = data["uuid"]
+                uuids.append(uuid)
                 conversation_uuid = data["conversation_uuid"]
                 conversation_uuids[conversation_uuid] = uuid
                 print(conversation_uuids)
@@ -222,8 +224,9 @@ class EventHandler(tornado.web.RequestHandler):
 
         try:
             if data["status"] == "completed":
-                ws_conversation_id = conversation_uuids[data["conversation_uuid"]]
+                uuids.clear()
 
+                ws_conversation_id = conversation_uuids[data["conversation_uuid"]]
                 print(conversation_uuids[data["conversation_uuid"]])
                 response = client.update_call(ws_conversation_id, action='hangup')
                 conversation_uuids[data["conversation_uuid"]] = ''
