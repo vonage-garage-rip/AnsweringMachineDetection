@@ -21,7 +21,6 @@ def on_message(ws, message):
     print(data)
     if data["beep_detected"] == True:
         for id in data["uuids"]:
-            print("id",id)
             response = client.send_speech(id, text='Answering Machine Detected')
             print(response)
 
