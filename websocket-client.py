@@ -1,20 +1,15 @@
 #!/usr/bin/python
 import websocket
-import time
 import os
 import nexmo
 import json
 from dotenv import load_dotenv
 load_dotenv()
 
-HOSTNAME =  os.getenv("HOSTNAME")#Change to the hostname of your server
-NEXMO_NUMBER = os.getenv("NEXMO_NUMBER")
+HOSTNAME =  os.getenv("HOSTNAME")
 NEXMO_APP_ID = os.getenv("NEXMO_APP_ID")
-CONF_NAME = os.getenv("CONF_NAME")
 
 client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
-print(client)
-
 
 def on_message(ws, message):
     data = json.loads(message)
