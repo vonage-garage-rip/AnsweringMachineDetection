@@ -49,10 +49,14 @@ MS_PER_FRAME = 15  # Duration of a frame in ms
 HOSTNAME =  os.getenv("HOSTNAME")#Change to the hostname of your server
 NEXMO_NUMBER = os.getenv("NEXMO_NUMBER")
 NEXMO_APP_ID = os.getenv("NEXMO_APP_ID")
-CONF_NAME = os.getenv("CONF_NAME")
+NEXMO_PRIVATE_KEY_PATH = os.getenv("NEXMO_PRIVATE_KEY_PATH")
 
-storage_client = storage.Client(os.getenv("PROJECT_ID"))
-bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
+PROJECT_ID = os.getenv("PROJECT_ID")
+CLOUD_STORAGE_BUCKET = os.getenv("CLOUD_STORAGE_BUCKET")
+
+if PROJECT_ID and CLOUD_STORAGE_BUCKET:
+    storage_client = storage.Client(PROJECT_ID)
+    bucket = storage_client.get_bucket(CLOUD_STORAGE_BUCKET)
 
 # Global variables
 conns = {}
@@ -62,8 +66,7 @@ uuids = []
 
 loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
 print(loaded_model)
-client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
-print(client)
+client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_PRIVATE_KEY_PATH)
 class BufferedPipe(object):
     def __init__(self, max_frames, sink):
         """
@@ -313,13 +316,10 @@ class RecordHandler(tornado.web.RequestHandler):
         response = client.get_recording(data["recording_url"])
         fn = "call-{}.wav".format(data["conversation_uuid"])
 
-        try:
+        if PROJECT_ID and CLOUD_STORAGE_BUCKET:
             blob = bucket.blob(fn)
             blob.upload_from_string(response, content_type="audio/wav")
             print('File uploaded.')
-        except Exception as e:
-            print("Error encountered while uploading file: ", e)
-
 
         self.write('ok')
         self.set_header("Content-Type", 'text/plain')
