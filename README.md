@@ -2,17 +2,17 @@
 
 For this solution, we built a machine learning algorithm that is able to detect when a call goes to voicemail by listening to the `beep` sound with 96% accuracy. When the call is picked up by the answering machine, we perform a speech-to-text action(TTS) which is recorded by the answering machine.
 
-## Try it out
-To try out the application, make a call to:
+## Try it out on Heroku
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-+1(201)582-2833
+After you deploy the application to Heroku, make a call to the purchased number for the application.
 
 The application will ask to enter a phone number. 
 Enter any phone number you like, as long as it is picked up by voicemail.
 
-To leave a TTS when the answering machine is picked up, run this python script, [websocket-client.py](websocket-client.py).
+To leave a TTS when the answering machine is picked up, run this python script, [websocket-client.py](websocket-client.py) locally.
 
-Change the `HOSTNAME` property to `careangel-amd-detector.herokuapp.com`
+Change the `HOSTNAME` property to heroku domain for the `{app-name}.herokuapp.com`
 
 Note, you will need to install the Nexmo python package using:
 `pip install nexmo`
