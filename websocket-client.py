@@ -22,7 +22,6 @@ PRIVATE_KEY = _get_private_key()
 
 client = nexmo.Client(application_id=APP_ID, private_key=PRIVATE_KEY)
 
-
 def on_message(ws, message):
     data = json.loads(message)
     print(data)
