@@ -96,7 +96,7 @@ class BufferedPipe(object):
         self.count = 0
         self.payload = b''
 
-class LexProcessor(object):
+class AudioProcessor(object):
     def __init__(self, path, rate, clip_min, uuid):
         self.rate = rate
         self.bytes_per_frame = rate/25
@@ -188,7 +188,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 uuid = data.get('uuid')
                 self.vad.set_mode(sensitivity)
                 self.silence = silence_time // MS_PER_FRAME
-                self.processor = LexProcessor(self.path, self.rate, clip_min, uuid).process
+                self.processor = AudioProcessor(self.path, self.rate, clip_min, uuid).process
                 self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
                 self.write_message('ok')
     def on_close(self):
