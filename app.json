@@ -1,0 +1,47 @@
+{
+  "name": "Answering Machine Detection",
+  "description": "Detect when a call goes to voicemail",
+  "repository": "https://github.com/VonageGarage/AnsweringMachineDetection",
+  "logo": "https://avatars0.githubusercontent.com/u/551057?v=3&s=200",
+  "env":{
+    "CREATE_NEXMO_APP": {
+      "description": "Should the application automatically create a nexmo application and purchase a new phone number",
+      "value": "yes"
+    },
+    "NAME": {
+      "description": "The Heroku app name, enter it exactly the same as you have above"
+    },
+    "API_KEY": {
+      "description": "Your Nexmo API Key",
+      "value": "",
+      "required" : false
+    },
+    "API_SECRET": {
+      "description": "Your Nexmo API Secret",
+      "value": "",
+      "required" : false
+    },
+    "CC": {
+      "description": "The ISO 3361 Country Code wheere you want the number to be purcahsed eg, US, GB, ES etc.",
+      "value": "",
+      "required" : false
+
+    },
+    "CLOUD_STORAGE_BUCKET": {
+      "description":"Google Cloud bucket name. Used to save recordings (Optional)",
+      "required":false
+    },
+    "PROJECT_ID": {
+      "description":"Google Cloud Project ID. Used to save recordings (Optional)",
+      "required":false
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "https://github.com/nexmo-community/heroku-buildpack-voice"
+    },
+    {
+       "url": "heroku/python"
+    }
+  ]
+}

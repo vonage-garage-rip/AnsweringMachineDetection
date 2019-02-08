@@ -46,13 +46,24 @@ logging.captureWarnings(True)
 
 # Constants:
 MS_PER_FRAME = 15  # Duration of a frame in ms
-HOSTNAME =  os.getenv("HOSTNAME")#Change to the hostname of your server
-NEXMO_NUMBER = os.getenv("NEXMO_NUMBER")
-NEXMO_APP_ID = os.getenv("NEXMO_APP_ID")
-CONF_NAME = os.getenv("CONF_NAME")
+MY_LVN = os.getenv("MY_LVN")
+APP_ID = os.getenv("APP_ID")
+PROJECT_ID = os.getenv("PROJECT_ID")
+CLOUD_STORAGE_BUCKET = os.getenv("CLOUD_STORAGE_BUCKET")
 
-storage_client = storage.Client(os.getenv("PROJECT_ID"))
-bucket = storage_client.get_bucket(os.getenv("CLOUD_STORAGE_BUCKET"))
+def _get_private_key():
+    try:
+        return os.environ['PRIVATE_KEY']
+    except:
+        with open('private.key', 'r') as f:
+            private_key = f.read()
+
+    return private_key
+
+PRIVATE_KEY = _get_private_key()
+if PROJECT_ID and CLOUD_STORAGE_BUCKET:
+    storage_client = storage.Client(PROJECT_ID)
+    bucket = storage_client.get_bucket(CLOUD_STORAGE_BUCKET)
 
 # Global variables
 conns = {}
@@ -62,7 +73,7 @@ uuids = []
 
 loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
 print(loaded_model)
-client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
+client = nexmo.Client(application_id=APP_ID, private_key=PRIVATE_KEY)
 print(client)
 class BufferedPipe(object):
     def __init__(self, max_frames, sink):
@@ -248,7 +259,7 @@ class EnterPhoneNumberHandler(tornado.web.RequestHandler):
               },
               {
                 "action": "input",
-                "eventUrl": ["https://"+HOSTNAME+"/ivr"],
+                "eventUrl": [self.request.protocol +"://" + self.request.host +"/ivr"],
                 "timeOut":10,
                 "maxDigits":12,
                 "submitOnHash":True
@@ -272,12 +283,12 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
               },
             {
                 "action": "record",
-                "eventUrl": ["https://"+HOSTNAME+"/recording"],
+                "eventUrl": [self.request.protocol +"://" + self.request.host  +"/recording"],
               },
              {
              "action": "connect",
-              "eventUrl": ["https://"+HOSTNAME+"/event"],
-               "from": NEXMO_NUMBER,
+              "eventUrl": [self.request.protocol +"://" + self.request.host  + "/event"],
+               "from": MY_LVN,
                "endpoint": [
                  {
                    "type": "phone",
@@ -287,12 +298,12 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
              },
               {
                  "action": "connect",
-                 "eventUrl": ["https://"+HOSTNAME+"/event"],
-                 "from": NEXMO_NUMBER,
+                 "eventUrl": [self.request.protocol +"://" + self.request.host  +"/event"],
+                 "from": MY_LVN,
                  "endpoint": [
                      {
                         "type": "websocket",
-                        "uri" : "ws://"+HOSTNAME+"/socket",
+                        "uri" : "ws://"+self.request.host +"/socket",
                         "content-type": "audio/l16;rate=16000",
                         "headers": {
                             "uuid":data["uuid"]
@@ -313,13 +324,10 @@ class RecordHandler(tornado.web.RequestHandler):
         response = client.get_recording(data["recording_url"])
         fn = "call-{}.wav".format(data["conversation_uuid"])
 
-        try:
+        if PROJECT_ID and CLOUD_STORAGE_BUCKET:
             blob = bucket.blob(fn)
             blob.upload_from_string(response, content_type="audio/wav")
             print('File uploaded.')
-        except Exception as e:
-            print("Error encountered while uploading file: ", e)
-
 
         self.write('ok')
         self.set_header("Content-Type", 'text/plain')

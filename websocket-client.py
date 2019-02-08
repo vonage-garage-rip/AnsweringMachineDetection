@@ -3,13 +3,24 @@ import websocket
 import os
 import nexmo
 import json
+import time
 from dotenv import load_dotenv
 load_dotenv()
 
-HOSTNAME =  os.getenv("HOSTNAME")
-NEXMO_APP_ID = os.getenv("NEXMO_APP_ID")
+def _get_private_key():
+    try:
+        return os.environ['PRIVATE_KEY']
+    except:
+        with open('private.key', 'r') as f:
+            private_key = f.read()
 
-client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_APP_ID+".key")
+    return private_key
+
+HOSTNAME =  os.getenv("HOSTNAME")
+APP_ID = os.getenv("APP_ID")
+PRIVATE_KEY = _get_private_key()
+
+client = nexmo.Client(application_id=APP_ID, private_key=PRIVATE_KEY)
 
 def on_message(ws, message):
     data = json.loads(message)
