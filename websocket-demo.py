@@ -46,7 +46,6 @@ logging.captureWarnings(True)
 
 # Constants:
 MS_PER_FRAME = 15  # Duration of a frame in ms
-HOSTNAME =  os.getenv("HOSTNAME")#Change to the hostname of your server
 MY_LVN = os.getenv("MY_LVN")
 APP_ID = os.getenv("APP_ID")
 PROJECT_ID = os.getenv("PROJECT_ID")
@@ -260,7 +259,7 @@ class EnterPhoneNumberHandler(tornado.web.RequestHandler):
               },
               {
                 "action": "input",
-                "eventUrl": ["https://"+HOSTNAME+"/ivr"],
+                "eventUrl": [self.request.protocol +"://" + self.request.host +"/ivr"],
                 "timeOut":10,
                 "maxDigits":12,
                 "submitOnHash":True
@@ -284,11 +283,11 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
               },
             {
                 "action": "record",
-                "eventUrl": ["https://"+HOSTNAME+"/recording"],
+                "eventUrl": [self.request.protocol +"://" + self.request.host  +"/recording"],
               },
              {
              "action": "connect",
-              "eventUrl": ["https://"+HOSTNAME+"/event"],
+              "eventUrl": [self.request.protocol +"://" + self.request.host  + "/event"],
                "from": MY_LVN,
                "endpoint": [
                  {
@@ -299,12 +298,12 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
              },
               {
                  "action": "connect",
-                 "eventUrl": ["https://"+HOSTNAME+"/event"],
+                 "eventUrl": [self.request.protocol +"://" + self.request.host  +"/event"],
                  "from": MY_LVN,
                  "endpoint": [
                      {
                         "type": "websocket",
-                        "uri" : "ws://"+HOSTNAME+"/socket",
+                        "uri" : "ws://"+self.request.host +"/socket",
                         "content-type": "audio/l16;rate=16000",
                         "headers": {
                             "uuid":data["uuid"]
