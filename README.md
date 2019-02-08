@@ -30,10 +30,9 @@ Clone the [github repo](https://github.com/nexmo-community/AnsweringMachineDetec
 
 Create a .env file with the following
 ```
-HOSTNAME={SERVER_URL}
-NEXMO_NUMBER={YOUR NEXMO NUMBER}
-NEXMO_APP_ID={NEXMO APP ID}
-CONF_NAME={NAME OF CONFERENCE} which can be anything
+MY_LVN={YOUR_NEXMO_NUMBER}
+APP_ID={YOUR_NEXMO_APPLICATION_ID}
+PRIVATE_KEY={PATH_TO_APPLICATION_PRIVATE_KEY}
 ```
 
 You will need to create a [Nexmo Application](https://developer.nexmo.com/concepts/guides/applications) and [Purchase a phone number](https://developer.nexmo.com/numbers/building-blocks/buy-a-number)
