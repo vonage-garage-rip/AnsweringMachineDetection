@@ -49,11 +49,19 @@ MS_PER_FRAME = 15  # Duration of a frame in ms
 HOSTNAME =  os.getenv("HOSTNAME")#Change to the hostname of your server
 NEXMO_NUMBER = os.getenv("NEXMO_NUMBER")
 NEXMO_APP_ID = os.getenv("NEXMO_APP_ID")
-NEXMO_PRIVATE_KEY_PATH = os.getenv("NEXMO_PRIVATE_KEY_PATH")
-
 PROJECT_ID = os.getenv("PROJECT_ID")
 CLOUD_STORAGE_BUCKET = os.getenv("CLOUD_STORAGE_BUCKET")
 
+def _get_private_key():
+    try:
+        return os.environ['PRIVATE_KEY']
+    except:
+        with open('private.key', 'r') as f:
+            private_key = f.read()
+
+    return private_key
+
+PRIVATE_KEY = _get_private_key()
 if PROJECT_ID and CLOUD_STORAGE_BUCKET:
     storage_client = storage.Client(PROJECT_ID)
     bucket = storage_client.get_bucket(CLOUD_STORAGE_BUCKET)
@@ -66,7 +74,8 @@ uuids = []
 
 loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
 print(loaded_model)
-client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=NEXMO_PRIVATE_KEY_PATH)
+client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=PRIVATE_KEY)
+print(client)
 class BufferedPipe(object):
     def __init__(self, max_frames, sink):
         """
