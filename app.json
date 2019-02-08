@@ -27,18 +27,6 @@
       "required" : false
 
     },
-    "HOSTNAME": {
-      "description":"Server URL for application. Do not include `https`"
-    },
-    "NEXMO_APP_ID":{
-      "description":"Nexmo Application ID"
-    },
-    "NEXMO_PRIVATE_KEY_PATH": {
-      "description":"Path to Nexmo Application private key"
-    },
-    "NEXMO_NUMBER": {
-      "description":"The Nexmo number associated with the Nexmo application"
-    },
     "CLOUD_STORAGE_BUCKET": {
       "description":"Google Cloud bucket name. Used to save recordings (Optional)",
       "required":false
