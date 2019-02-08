@@ -47,8 +47,8 @@ logging.captureWarnings(True)
 # Constants:
 MS_PER_FRAME = 15  # Duration of a frame in ms
 HOSTNAME =  os.getenv("HOSTNAME")#Change to the hostname of your server
-NEXMO_NUMBER = os.getenv("NEXMO_NUMBER")
-NEXMO_APP_ID = os.getenv("NEXMO_APP_ID")
+MY_LVN = os.getenv("MY_LVN")
+APP_ID = os.getenv("APP_ID")
 PROJECT_ID = os.getenv("PROJECT_ID")
 CLOUD_STORAGE_BUCKET = os.getenv("CLOUD_STORAGE_BUCKET")
 
@@ -74,7 +74,7 @@ uuids = []
 
 loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
 print(loaded_model)
-client = nexmo.Client(application_id=NEXMO_APP_ID, private_key=PRIVATE_KEY)
+client = nexmo.Client(application_id=APP_ID, private_key=PRIVATE_KEY)
 print(client)
 class BufferedPipe(object):
     def __init__(self, max_frames, sink):
@@ -289,7 +289,7 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
              {
              "action": "connect",
               "eventUrl": ["https://"+HOSTNAME+"/event"],
-               "from": NEXMO_NUMBER,
+               "from": MY_LVN,
                "endpoint": [
                  {
                    "type": "phone",
@@ -300,7 +300,7 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
               {
                  "action": "connect",
                  "eventUrl": ["https://"+HOSTNAME+"/event"],
-                 "from": NEXMO_NUMBER,
+                 "from": MY_LVN,
                  "endpoint": [
                      {
                         "type": "websocket",
