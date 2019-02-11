@@ -105,12 +105,11 @@ class BufferedPipe(object):
         self.payload = b''
 
 class AudioProcessor(object):
-    def __init__(self, path, rate, clip_min, client):
+    def __init__(self, path, rate, clip_min):
         self.rate = rate
         self.bytes_per_frame = rate/25
         self._path = path
         self.clip_min_frames = clip_min // MS_PER_FRAME
-        self.client = client
     def process(self, count, payload, id):
         if count > self.clip_min_frames:  # If the buffer is less than CLIP_MIN_MS, ignore it
             fn = "{}rec-{}-{}.wav".format('', id, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
@@ -136,14 +135,12 @@ class AudioProcessor(object):
 
             if prediction[0] == 0:
                 beep_captured = True
-                for id in uuids:
-                    self.client.send_speech(id, text='Answering Machine Detected')
-                time.sleep(4)
-                for id in uuids:
-                    try:
-                        self.client.update_call(id, action='hangup')
-                    except:
-                        pass
+                print("beep detected")
+            else:
+                beep_captured = False
+
+            for client in clients:
+                client.write_message({"uuids":uuids, "beep_detected":beep_captured})
 
         else:
             print("model not loaded")
@@ -198,7 +195,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 uuid = data.get('uuid')
                 self.vad.set_mode(sensitivity)
                 self.silence = silence_time // MS_PER_FRAME
-                self.processor = AudioProcessor(self.path, self.rate, clip_min, client).process
+                self.processor = AudioProcessor(self.path, self.rate, clip_min).process
                 self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
                 self.write_message('ok')
     def on_close(self):
