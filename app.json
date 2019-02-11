@@ -1,7 +1,7 @@
 {
   "name": "Answering Machine Detection",
   "description": "Detect when a call goes to voicemail",
-  "repository": "https://github.com/VonageGarage/AnsweringMachineDetection",
+  "repository": "https://github.com/nexmo-community/AnsweringMachineDetection",
   "logo": "https://avatars0.githubusercontent.com/u/551057?v=3&s=200",
   "env":{
     "CREATE_NEXMO_APP": {
