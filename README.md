@@ -8,20 +8,9 @@ For this solution, we built a machine learning algorithm that is able to detect 
 After you deploy the application to Heroku, make a call to the purchased number for the application.
 
 The application will ask to enter a phone number. 
-Enter any phone number you like, as long as it is picked up by voicemail.
+Enter any phone number you like, as long as it is picked up by voicemail. The call will go to voicemail and the answering machine model will start listenting on the call.
 
-To leave a TTS when the answering machine is picked up, run this python script, [websocket-client.py](websocket-client.py) locally.
-
-Change the `HOSTNAME` property to heroku domain for the `{app-name}.herokuapp.com`
-
-Note, you will need to install the Nexmo python package using:
-`pip install nexmo`
-
-When the voicemail is detected, you will see the following message in your console, when running the `websocket-client.py` script:
-
-`{'uuids': ['xxx'], 'beep_detected': True}`
-
-Then, the script plays a TTS saying `Answering Machine Detected`, and the call will hangup.
+When a beep is detected, the application performs a Text-To-Speech, with the phrase, `Answering Machine Detected`, and the call will hangup.
 
 ## To install
 Clone the [github repo](https://github.com/nexmo-community/AnsweringMachineDetection) and run: 
@@ -36,7 +25,3 @@ PRIVATE_KEY={PATH_TO_APPLICATION_PRIVATE_KEY}
 ```
 
 You will need to create a [Nexmo Application](https://developer.nexmo.com/concepts/guides/applications) and [Purchase a phone number](https://developer.nexmo.com/numbers/building-blocks/buy-a-number)
-
-There are 2 python scripts that need to be run. 
-The first, `websocket-demo.py` is the websocket.
-Running this script will start the server and detect whenever a answering machine is detected
