@@ -40,4 +40,3 @@ You will need to create a [Nexmo Application](https://developer.nexmo.com/concep
 There are 2 python scripts that need to be run. 
 The first, `websocket-demo.py` is the websocket.
 Running this script will start the server and detect whenever a answering machine is detected
-
