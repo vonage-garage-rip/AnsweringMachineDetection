@@ -5,6 +5,21 @@
 For this solution, we built a machine learning algorithm that is able to detect when a call goes to voicemail by listening to the `beep` sound with 96% accuracy. When the call is picked up by the answering machine, we perform a text-to-speech action(TTS) which is then recorded by the answering machine.
 
 ## Running the app
+
+### Using Docker
+
+To run the app using Docker run the following command in your terminal:
+
+```bash
+docker-compose up
+```
+
+This will create a new image with all the dependencies and run it at `http://localhost:8000`.
+
+You can declare the required environment variables by editing the `docker-compose.yml` file.
+
+### Local Install
+
 To run this on your machine you'll need an [up-to-date version of Python 3](https://www.python.org/downloads/).
 
 Clone the [github repo](https://github.com/nexmo-community/AnsweringMachineDetection) and run: 
