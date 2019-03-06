@@ -1,7 +1,7 @@
-Did you ever need a way to detect when an answering machine was detected on a voice call? no? Thats ok. I did!
+Have you ever needed to detect if an answering machine has answered your voice call? No? Thats ok - I did!
 
 # Prerequisites
-This post assumed you know some Python as well as having a very basic understanding of machine learning.
+This post assumes you know some Python as well as having a very basic understanding of machine learning.
 
 ------
 
@@ -117,7 +117,7 @@ The function `train`, takes a list of features that we want to use, which is jus
 
 ![](images/amd-confusion-matrix.png)
 
-We trained a few models on our data. These models, as well as their accuracy(how well the model performed) follows:
+We trained a few models on our data. These models, as well as their accuracy (how well the model performed) follow:
 
 * [RandomForestClassifier](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) 97% accuracy
 * [LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html) 96% accuracy
