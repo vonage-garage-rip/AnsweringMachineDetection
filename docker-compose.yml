@@ -1,0 +1,13 @@
+version: '3'
+services:
+  web:
+    container_name: answering-machine-detection
+    restart: always
+    environment:
+      - HOSTNAME=
+      - LANGUAGE=en-US
+      - KEY1=
+      - REGIONAL_API_ENDPOINT=
+    build: .
+    ports:
+      - '8000:8000'
