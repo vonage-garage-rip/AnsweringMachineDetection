@@ -28,14 +28,16 @@ from base64 import b64decode
 import datetime
 import wave
 
-import numpy as np
 from scipy.io import wavfile
-import librosa
+# import librosa
 import pickle
 from google.cloud import storage
 
 from dotenv import load_dotenv
-from sklearn.naive_bayes import GaussianNB
+# from sklearn.naive_bayes import GaussianNB
+import numpy as np
+import tensorflow as tf
+
 
 load_dotenv()
 
@@ -71,10 +73,56 @@ clients = []
 conversation_uuids = dict()
 uuids = []
 
-loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
-print(loaded_model)
+# loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
+# print(loaded_model)
+
 client = nexmo.Client(application_id=APP_ID, private_key=PRIVATE_KEY)
 print(client)
+
+import keras
+
+from audioset import vggish_postprocess
+from audioset import vggish_input
+from audioset import vggish_params
+from audioset import vggish_slim
+PCA_PARAMS = 'audioset/vggish_pca_params.npz'
+VGG_CHECKPOINT = 'audioset/vggish_model.ckpt'
+
+class Model(object):
+    def __init__(self):
+        self.graph = tf.Graph().as_default()
+        self.session = tf.Session()
+        self.pproc = vggish_postprocess.Postprocessor(PCA_PARAMS)
+
+        vggish_slim.define_vggish_slim(training=False)
+        vggish_slim.load_vggish_slim_checkpoint(self.session, VGG_CHECKPOINT)
+        self.features_tensor = self.session.graph.get_tensor_by_name(
+            vggish_params.INPUT_TENSOR_NAME)
+        self.embedding_tensor = self.session.graph.get_tensor_by_name(
+            vggish_params.OUTPUT_TENSOR_NAME)
+        self.model = keras.models.load_model("models/LSTM_3_layer_10Epochs.h5")
+
+    def process_file(self,wav_file):
+        examples_batch = vggish_input.wavfile_to_examples(wav_file)
+        if examples_batch.shape[0] <1:
+            print("wrong shape")
+            return
+        print("examples_batch",examples_batch.shape)
+        # Define the model in inference mode, load the checkpoint, and
+        # locate input and output tensors.
+        [embedding_batch] = self.session.run([self.embedding_tensor],
+                                           feed_dict={self.features_tensor: examples_batch})
+        postprocessed_batch = self.pproc.postprocess(embedding_batch)
+        print("postprocessed_batch", postprocessed_batch.shape)
+        embedding = np.expand_dims(postprocessed_batch, axis=0)
+        print('embedding',embedding.shape)
+        return embedding
+
+    def predict(self,embedding):
+        if embedding is not None:
+            prediction = self.model.predict(embedding)
+            print(prediction)
+
 class BufferedPipe(object):
     def __init__(self, max_frames, sink):
         """
@@ -105,12 +153,13 @@ class BufferedPipe(object):
         self.payload = b''
 
 class AudioProcessor(object):
-    def __init__(self, path, rate, clip_min, client):
+    def __init__(self, path, rate, clip_min, client, model):
         self.rate = rate
         self.bytes_per_frame = rate/25
         self._path = path
         self.clip_min_frames = clip_min // MS_PER_FRAME
         self.client = client
+        self.model = model
     def process(self, count, payload, id):
         if count > self.clip_min_frames:  # If the buffer is less than CLIP_MIN_MS, ignore it
             fn = "{}rec-{}-{}.wav".format('', id, datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))
@@ -124,29 +173,11 @@ class AudioProcessor(object):
             self.removeFile(fn)
         else:
             info('Discarding {} frames'.format(str(count)))
-    def process_file(self, wav_file):
-        if loaded_model != None:
-            print("load file {}".format(wav_file))
+    def process_file(self,wav_file):
+        embedding = self.model.process_file(wav_file)
+        self.model.predict(embedding)
 
-            X, sample_rate = librosa.load(wav_file, res_type='kaiser_fast')
-            mfccs = np.mean(librosa.feature.mfcc(y=X, sr=sample_rate, n_mfcc=40).T,axis=0)
-            X = [mfccs]
-            prediction = loaded_model.predict(X)
-            print("prediction",prediction)
 
-            if prediction[0] == 0:
-                beep_captured = True
-                for id in uuids:
-                    self.client.send_speech(id, text='Answering Machine Detected')
-                time.sleep(4)
-                for id in uuids:
-                    try:
-                        self.client.update_call(id, action='hangup')
-                    except:
-                        pass
-
-        else:
-            print("model not loaded")
     def removeFile(self, wav_file):
          os.remove(wav_file)
 
@@ -163,6 +194,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         self.path = None
         self.rate = None #default to None
         self.silence = 20 #default of 20 frames (400ms)
+        self.model = Model()
+        print("**** init WSHandler ****")
         conns[self.id] = self
     def open(self, path):
         info("client connected")
@@ -198,7 +231,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 uuid = data.get('uuid')
                 self.vad.set_mode(sensitivity)
                 self.silence = silence_time // MS_PER_FRAME
-                self.processor = AudioProcessor(self.path, self.rate, clip_min, client).process
+                self.processor = AudioProcessor(self.path, self.rate, clip_min, client, self.model).process
                 self.frame_buffer = BufferedPipe(clip_max // MS_PER_FRAME, self.processor)
                 self.write_message('ok')
     def on_close(self):
@@ -221,30 +254,30 @@ class EventHandler(tornado.web.RequestHandler):
     def post(self):
         # print("event:", self.request.body)
 
-        data = json.loads(self.request.body)
-        try:
-            if data["status"] == "answered":
-                uuid = data["uuid"]
-                uuids.append(uuid)
-                conversation_uuid = data["conversation_uuid"]
-                conversation_uuids[conversation_uuid] = uuid
-                print(conversation_uuids)
-        except:
-            pass
-
-
-        try:
-            if data["status"] == "completed":
-                uuids.clear()
-
-                ws_conversation_id = conversation_uuids[data["conversation_uuid"]]
-                response = client.update_call(ws_conversation_id, action='hangup')
-                conversation_uuids[data["conversation_uuid"]] = ''
-                print(response)
-
-        except Exception as e:
-            print(e)
-            pass
+        # data = json.loads(self.request.body)
+        # try:
+        #     if data["status"] == "answered":
+        #         uuid = data["uuid"]
+        #         uuids.append(uuid)
+        #         conversation_uuid = data["conversation_uuid"]
+        #         conversation_uuids[conversation_uuid] = uuid
+        #         print(conversation_uuids)
+        # except:
+        #     pass
+        #
+        #
+        # try:
+        #     if data["status"] == "completed":
+        #         uuids.clear()
+        #
+        #         ws_conversation_id = conversation_uuids[data["conversation_uuid"]]
+        #         response = client.update_call(ws_conversation_id, action='hangup')
+        #         conversation_uuids[data["conversation_uuid"]] = ''
+        #         print(response)
+        #
+        # except Exception as e:
+        #     print(e)
+        #     pass
 
 
         self.content_type = 'text/plain'
@@ -268,6 +301,7 @@ class EnterPhoneNumberHandler(tornado.web.RequestHandler):
               }
 
             ]
+        print(ncco)
         self.write(json.dumps(ncco))
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
         self.finish()
@@ -275,9 +309,9 @@ class EnterPhoneNumberHandler(tornado.web.RequestHandler):
 
 class AcceptNumberHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
-    def post(self):
-        data = json.loads(self.request.body)
-        print(data)
+    def get(self):
+        # data = json.loads(self.request.body)
+        # print(data)
         ncco = [
               {
                 "action": "talk",
@@ -294,7 +328,7 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
                "endpoint": [
                  {
                    "type": "phone",
-                   "number": data["dtmf"]
+                   "number": "18457297292"#data["dtmf"]
                  }
                ]
              },
@@ -308,7 +342,7 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
                         "uri" : "ws://"+self.request.host +"/socket",
                         "content-type": "audio/l16;rate=16000",
                         "headers": {
-                            "uuid":data["uuid"]
+                            "uuid":"123"#data["uuid"]
                         }
                      }
                  ]
@@ -344,7 +378,7 @@ def main():
         application = tornado.web.Application([
 			url(r"/ping", PingHandler),
             (r"/event", EventHandler),
-            (r"/ncco", EnterPhoneNumberHandler),
+            (r"/ncco", AcceptNumberHandler),
             (r"/recording", RecordHandler),
             (r"/ivr", AcceptNumberHandler),
             url(r"/(.*)", WSHandler),
