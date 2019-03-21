@@ -71,6 +71,20 @@ def waveform_to_examples(data, sample_rate):
   return log_mel_examples
 
 
+def pad_audio(data, fs, T):
+    # Calculate target number of samples
+    N_tar = int(fs * T)
+    # Calculate number of zero samples to append
+    shape = data.shape
+    print(shape)
+    # Create the target shape
+    N_pad = N_tar - shape[0]
+    print("appending %s seconds of silence" % str(N_pad/fs) )
+    shape = (N_pad,) + shape[1:]
+    print(shape)
+    return np.hstack((data,np.zeros(shape))).astype(np.int16)
+
+
 def wavfile_to_examples(wav_file):
   """Convenience wrapper around waveform_to_examples() for a common WAV format.
 
@@ -82,6 +96,9 @@ def wavfile_to_examples(wav_file):
     See waveform_to_examples.
   """
   wav_data, sr = sf.read(wav_file, dtype='int16')
+  num_seconds = len(wav_data) / sr
+  if num_seconds < 1:
+    wav_data = pad_audio(wav_data, sr, 1)
   assert wav_data.dtype == np.int16, 'Bad sample type: %r' % wav_data.dtype
   samples = wav_data / 32768.0  # Convert to [-1.0, +1.0]
   return waveform_to_examples(samples, sr)
