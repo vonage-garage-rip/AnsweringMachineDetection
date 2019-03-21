@@ -73,20 +73,17 @@ clients = []
 conversation_uuids = dict()
 uuids = []
 
-# loaded_model = pickle.load(open("models/GaussianNB-20190130T1233.pkl", "rb"))
-# print(loaded_model)
-
 client = nexmo.Client(application_id=APP_ID, private_key=PRIVATE_KEY)
-print(client)
 
 import keras
-
 from audioset import vggish_postprocess
 from audioset import vggish_input
 from audioset import vggish_params
 from audioset import vggish_slim
 PCA_PARAMS = 'audioset/vggish_pca_params.npz'
 VGG_CHECKPOINT = 'audioset/vggish_model.ckpt'
+
+keras_model = keras.models.load_model("models/LSTM_3_layer_10Epochs.h5")
 
 class Model(object):
     def __init__(self):
@@ -100,7 +97,6 @@ class Model(object):
             vggish_params.INPUT_TENSOR_NAME)
         self.embedding_tensor = self.session.graph.get_tensor_by_name(
             vggish_params.OUTPUT_TENSOR_NAME)
-        self.model = keras.models.load_model("models/LSTM_3_layer_10Epochs.h5")
 
     def process_file(self,wav_file):
         examples_batch = vggish_input.wavfile_to_examples(wav_file)
@@ -120,7 +116,7 @@ class Model(object):
 
     def predict(self,embedding):
         if embedding is not None:
-            prediction = self.model.predict(embedding)
+            prediction = keras_model.predict(embedding)
             print(prediction)
 
 class BufferedPipe(object):
@@ -170,14 +166,12 @@ class AudioProcessor(object):
             debug('File written {}'.format(fn))
             self.process_file(fn)
             info('Processing {} frames for {}'.format(str(count), id))
-            self.removeFile(fn)
+            # self.removeFile(fn)
         else:
             info('Discarding {} frames'.format(str(count)))
     def process_file(self,wav_file):
         embedding = self.model.process_file(wav_file)
         self.model.predict(embedding)
-
-
     def removeFile(self, wav_file):
          os.remove(wav_file)
 
@@ -195,7 +189,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         self.rate = None #default to None
         self.silence = 20 #default of 20 frames (400ms)
         self.model = Model()
-        print("**** init WSHandler ****")
         conns[self.id] = self
     def open(self, path):
         info("client connected")
@@ -254,30 +247,30 @@ class EventHandler(tornado.web.RequestHandler):
     def post(self):
         # print("event:", self.request.body)
 
-        # data = json.loads(self.request.body)
-        # try:
-        #     if data["status"] == "answered":
-        #         uuid = data["uuid"]
-        #         uuids.append(uuid)
-        #         conversation_uuid = data["conversation_uuid"]
-        #         conversation_uuids[conversation_uuid] = uuid
-        #         print(conversation_uuids)
-        # except:
-        #     pass
-        #
-        #
-        # try:
-        #     if data["status"] == "completed":
-        #         uuids.clear()
-        #
-        #         ws_conversation_id = conversation_uuids[data["conversation_uuid"]]
-        #         response = client.update_call(ws_conversation_id, action='hangup')
-        #         conversation_uuids[data["conversation_uuid"]] = ''
-        #         print(response)
-        #
-        # except Exception as e:
-        #     print(e)
-        #     pass
+        data = json.loads(self.request.body)
+        try:
+            if data["status"] == "answered":
+                uuid = data["uuid"]
+                uuids.append(uuid)
+                conversation_uuid = data["conversation_uuid"]
+                conversation_uuids[conversation_uuid] = uuid
+                print(conversation_uuids)
+        except:
+            pass
+
+
+        try:
+            if data["status"] == "completed":
+                uuids.clear()
+
+                ws_conversation_id = conversation_uuids[data["conversation_uuid"]]
+                response = client.update_call(ws_conversation_id, action='hangup')
+                conversation_uuids[data["conversation_uuid"]] = ''
+                print(response)
+
+        except Exception as e:
+            print(e)
+            pass
 
 
         self.content_type = 'text/plain'
@@ -301,7 +294,6 @@ class EnterPhoneNumberHandler(tornado.web.RequestHandler):
               }
 
             ]
-        print(ncco)
         self.write(json.dumps(ncco))
         self.set_header("Content-Type", 'application/json; charset="utf-8"')
         self.finish()
@@ -309,9 +301,9 @@ class EnterPhoneNumberHandler(tornado.web.RequestHandler):
 
 class AcceptNumberHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
-    def get(self):
-        # data = json.loads(self.request.body)
-        # print(data)
+    def post(self):
+        data = json.loads(self.request.body)
+        print(data)
         ncco = [
               {
                 "action": "talk",
@@ -328,7 +320,7 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
                "endpoint": [
                  {
                    "type": "phone",
-                   "number": "18457297292"#data["dtmf"]
+                   "number": data["dtmf"]
                  }
                ]
              },
@@ -342,7 +334,7 @@ class AcceptNumberHandler(tornado.web.RequestHandler):
                         "uri" : "ws://"+self.request.host +"/socket",
                         "content-type": "audio/l16;rate=16000",
                         "headers": {
-                            "uuid":"123"#data["uuid"]
+                            "uuid":data["uuid"]
                         }
                      }
                  ]
@@ -378,7 +370,7 @@ def main():
         application = tornado.web.Application([
 			url(r"/ping", PingHandler),
             (r"/event", EventHandler),
-            (r"/ncco", AcceptNumberHandler),
+            (r"/ncco", EnterPhoneNumberHandler),
             (r"/recording", RecordHandler),
             (r"/ivr", AcceptNumberHandler),
             url(r"/(.*)", WSHandler),
