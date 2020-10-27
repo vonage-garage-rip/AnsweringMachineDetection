@@ -3,7 +3,7 @@ audioread==2.1.6
 certifi==2018.11.29
 cffi==1.11.5
 chardet==3.0.4
-cryptography==2.4.2
+cryptography==3.2
 decorator==4.3.0
 idna==2.8
 librosa==0.6.2
