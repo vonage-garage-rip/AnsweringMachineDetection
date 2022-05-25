@@ -10,7 +10,7 @@ librosa==0.6.2
 llvmlite==0.27.0
 nexmo==2.3.0
 pycparser==2.19
-PyJWT==1.7.1
+PyJWT==2.4.0
 pyOpenSSL==18.0.0
 PySocks==1.6.8
 pytz==2018.9
